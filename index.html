@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Unicorn Challenge - Deluxe Edition</title>
+    <!-- 使用 Tailwind CSS 构建现代化 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入圆润可爱的字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: #fdf2f8; 
+            color: #334155;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-card {
+            border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* 运算符按钮样式 */
+        .op-btn {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid transparent;
+        }
+        .op-btn.selected {
+            background-color: #ec4899; 
+            color: white;
+            transform: scale(1.1);
+            border-color: #fce7f3;
+        }
+
+        /* 独角兽跑道样式 */
+        .track {
+            position: relative;
+            height: 60px;
+            background: #f1f5f9;
+            border-radius: 30px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+        }
+
+        #unicorn-sprite {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0%;
+            font-size: 32px;
+            transition: left 0.1s linear;
+            z-index: 10;
+        }
+
+        .track-rainbow {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #fbcfe8, #ec4899);
+            transition: width 0.1s linear;
+        }
+
+        /* Boost 模式激活样式 */
+        .track.boost-active {
+            border-color: #fbbf24;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+        }
+        .track.boost-active .track-rainbow {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        }
+
+        /* 结算动画 */
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake { animation: shake 0.2s ease-in-out 3; }
+
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .score-float {
+            position: absolute;
+            animation: float-up 1s ease-out forwards;
+            pointer-events: none;
+            font-weight: bold;
+            color: #ec4899;
+            z-index: 100;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+
+        .bouncing { animation: bounce-subtle 2s infinite ease-in-out; }
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .boost-pulse { animation: pulse-gold 1.5s infinite; }
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(251, 191, 36, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+        }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center overflow-hidden">
+
+    <!-- 粒子烟花画布 -->
+    <canvas id="fireworks-canvas"></canvas>
+
+    <div id="app-container" class="main-card p-8 w-full max-w-md mx-4 relative border border-white">
+        
+        <!-- 首页 -->
+        <div id="screen-home" class="text-center">
+            <div class="mb-4 text-6xl bouncing">🦄</div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-1">Math Unicorn</h1>
+            <div id="difficulty-badge" class="inline-block px-4 py-1 bg-rose-50 rounded-full text-rose-500 text-xs font-bold uppercase tracking-widest mb-6">
+                Multiplier: x1.00
+            </div>
+            
+            <!-- 运算符选择 -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <button onclick="toggleOp('add')" id="btn-add" class="op-btn py-4 bg-white rounded-3xl text-3xl shadow-sm hover:shadow-md font-bold text-rose-500 flex flex-col items-center">
+                    <span>+</span><span class="text-[10px] uppercase font-bold text-rose-300">Base</span>
+                </button>
+                <button onclick="toggleOp('sub')" id="btn-sub" class="op-btn py-4 bg-white rounded-3xl text-3xl shadow-sm hover:shadow-md font-bold text-sky-500 flex flex-col items-center">
+                    <span>-</span><span class="text-[10px] uppercase font-bold text-sky-300">+10%</span>
+                </button>
+                <button onclick="toggleOp('mul')" id="btn-mul" class="op-btn py-4 bg-white rounded-3xl text-3xl shadow-sm hover:shadow-md font-bold text-amber-500 flex flex-col items-center">
+                    <span>×</span><span class="text-[10px] uppercase font-bold text-amber-300">+20%</span>
+                </button>
+                <button onclick="toggleOp('div')" id="btn-div" class="op-btn py-4 bg-white rounded-3xl text-3xl shadow-sm hover:shadow-md font-bold text-emerald-500 flex flex-col items-center">
+                    <span>÷</span><span class="text-[10px] uppercase font-bold text-emerald-300">+30%</span>
+                </button>
+            </div>
+
+            <button onclick="checkAndStart()" class="w-full bg-slate-800 text-white font-bold py-5 rounded-full text-xl shadow-xl active:scale-95 transition">
+                READY TO GO!
+            </button>
+            <button onclick="showLeaderboard()" class="mt-4 text-gray-400 font-bold text-sm hover:text-rose-500 transition">LEADERBOARD</button>
+        </div>
+
+        <!-- 游戏界面 -->
+        <div id="screen-play" class="hidden relative">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex gap-2">
+                    <button onclick="pauseGame()" class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200">⏸</button>
+                    <button onclick="exitToMenu()" class="w-10 h-10 flex items-center justify-center bg-red-50 rounded-full hover:bg-red-100">✕</button>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">Total Score</div>
+                    <div id="display-score" class="text-2xl font-black text-rose-500">0</div>
+                </div>
+            </div>
+
+            <div id="track-container" class="track mb-8">
+                <div id="timer-rainbow" class="track-rainbow w-0"></div>
+                <div id="unicorn-sprite">🦄</div>
+            </div>
+
+            <div id="question-area" class="text-center mb-8 relative">
+                <div id="display-question" class="text-6xl font-black text-slate-800 transition-all duration-300">0 + 0</div>
+            </div>
+
+            <div id="options-grid" class="grid grid-cols-1 gap-3 mb-8"></div>
+
+            <!-- Boost 按钮 -->
+            <div class="flex flex-col items-center">
+                <button id="btn-boost" onclick="toggleBoost()" class="w-20 h-20 rounded-full bg-slate-100 border-4 border-white shadow-xl flex items-center justify-center text-3xl transition-all duration-300 hover:scale-110 active:scale-90">⚡</button>
+                <div class="mt-2 text-center">
+                    <p id="boost-status" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Boost: OFF</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 暂停遮罩 -->
+        <div id="overlay-pause" class="hidden absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center rounded-[40px]">
+            <h2 class="text-4xl font-bold mb-8">PAUSED</h2>
+            <button onclick="resumeGame()" class="bg-rose-500 text-white px-12 py-4 rounded-full font-bold text-xl shadow-lg active:scale-95 mb-4">RESUME</button>
+            <button onclick="exitToMenu()" class="text-gray-400 font-bold">QUIT</button>
+        </div>
+
+        <!-- 结算中心 -->
+        <div id="screen-over" class="hidden text-center">
+            <h2 class="text-3xl font-bold text-red-500 mb-6">TIME'S UP!</h2>
+            
+            <div class="bg-slate-50 rounded-[30px] p-6 mb-6 space-y-4 relative overflow-hidden">
+                <!-- 基础分结算 -->
+                <div id="step-base" class="opacity-0 flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Base Score</span>
+                    <span id="tally-base" class="font-black text-slate-700">0</span>
+                </div>
+                
+                <!-- 时间奖金结算 -->
+                <div id="step-time" class="opacity-0 flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm">
+                    <span class="text-xs font-bold text-sky-400 uppercase">Time Bonus 🎆</span>
+                    <span id="tally-time" class="font-black text-sky-500">+0</span>
+                </div>
+                
+                <!-- 难度奖金结算 -->
+                <div id="step-diff" class="opacity-0 flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm">
+                    <span class="text-xs font-bold text-amber-400 uppercase">Difficulty Bonus 💥</span>
+                    <span id="tally-diff" class="font-black text-amber-500">+0</span>
+                </div>
+
+                <!-- 汇总 -->
+                <div class="border-t border-dashed border-gray-200 pt-4">
+                    <p class="text-xs text-gray-400 font-bold uppercase mb-1">Grand Total</p>
+                    <div id="final-total-score" class="text-5xl font-black text-rose-500">0</div>
+                </div>
+            </div>
+
+            <!-- 操作区（动画完成后显示） -->
+            <div id="over-actions" class="opacity-0 translate-y-4 transition-all duration-500">
+                <input type="text" id="input-name" placeholder="Enter Your Name" class="w-full p-4 bg-gray-100 rounded-2xl mb-4 text-center text-lg outline-none focus:ring-2 ring-rose-300">
+                <button onclick="saveAndShowLeader()" class="w-full bg-rose-500 text-white font-bold py-4 rounded-full shadow-lg active:scale-95 mb-4">SAVE SCORE</button>
+            </div>
+        </div>
+
+        <!-- 排行榜 -->
+        <div id="screen-leaderboard" class="hidden">
+            <h2 class="text-2xl font-bold mb-6 text-center">Top Unicorns</h2>
+            <div id="leaderboard-container" class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2"></div>
+            <button onclick="showScreen('home')" class="w-full bg-slate-800 text-white font-bold py-4 rounded-full active:scale-95 transition">BACK HOME</button>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * 游戏配置与状态管理
+         */
+        let selectedOps = [];
+        let score = 0;
+        let correctCount = 0;
+        let gameActive = false, isPaused = false, isBoostActive = false;
+        let timer = null, timeLeft = 0, timeLimit = 5.0, currentQ = {};
+        
+        // 存储本局详细数据用于结算
+        let sessionStats = { base: 0, time: 0, diff: 0 };
+
+        const opData = {
+            add: { symbol: '+', weight: 1.0, btnId: 'btn-add' },
+            sub: { symbol: '-', weight: 1.1, btnId: 'btn-sub' },
+            mul: { symbol: '×', weight: 1.2, btnId: 'btn-mul' },
+            div: { symbol: '÷', weight: 1.3, btnId: 'btn-div' }
+        };
+
+        /**
+         * 界面导航
+         */
+        function showScreen(name) {
+            ['home', 'play', 'over', 'leaderboard'].forEach(s => document.getElementById('screen-' + s).classList.add('hidden'));
+            document.getElementById('screen-' + name).classList.remove('hidden');
+        }
+
+        /**
+         * 首页逻辑
+         */
+        function toggleOp(op) {
+            const btn = document.getElementById(opData[op].btnId);
+            if (selectedOps.includes(op)) {
+                selectedOps = selectedOps.filter(o => o !== op);
+                btn.classList.remove('selected');
+            } else {
+                selectedOps.push(op);
+                btn.classList.add('selected');
+            }
+            const totalWeight = selectedOps.reduce((sum, o) => sum + opData[o].weight, 0);
+            const avg = selectedOps.length ? totalWeight / selectedOps.length : 1.0;
+            document.getElementById('difficulty-badge').innerText = `Multiplier: x${avg.toFixed(2)}`;
+        }
+
+        function checkAndStart() {
+            if (!selectedOps.length) return;
+            startGame();
+        }
+
+        /**
+         * 核心游戏逻辑
+         */
+        function startGame() {
+            score = 0; correctCount = 0; gameActive = true;
+            sessionStats = { base: 0, time: 0, diff: 0 };
+            document.getElementById('display-score').innerText = "0";
+            showScreen('play');
+            generateQuestion();
+        }
+
+        function toggleBoost() {
+            if (!gameActive || isPaused) return;
+            isBoostActive = !isBoostActive;
+            const btn = document.getElementById('btn-boost');
+            btn.className = isBoostActive ? 
+                "w-20 h-20 rounded-full bg-amber-400 border-4 border-white shadow-xl flex items-center justify-center text-3xl boost-pulse" : 
+                "w-20 h-20 rounded-full bg-slate-100 border-4 border-white shadow-xl flex items-center justify-center text-3xl";
+            document.getElementById('track-container').classList.toggle('boost-active', isBoostActive);
+            document.getElementById('unicorn-sprite').innerText = isBoostActive ? "⚡🦄" : "🦄";
+        }
+
+        function generateQuestion() {
+            if (!gameActive) return;
+            // 随答题数增加数字范围
+            let range = [3, 5, 8, 10][Math.min(3, Math.floor(correctCount / 10))];
+            const type = selectedOps[Math.floor(Math.random() * selectedOps.length)];
+            let n1, n2, ans, symbol;
+
+            if(type === 'add'){ n1 = r(range); n2 = r(range); ans = n1+n2; symbol='+'; }
+            else if(type === 'sub'){ n2 = r(range); n1 = n2 + r(range); ans = n1-n2; symbol='-'; }
+            else if(type === 'mul'){ n1 = r(range); n2 = r(range); ans = n1*n2; symbol='×'; }
+            else { ans = r(range); n2 = r(range); n1 = ans*n2; symbol='÷'; }
+
+            currentQ = { n1, n2, ans, symbol, type };
+            document.getElementById('display-question').innerText = `${n1} ${symbol} ${n2}`;
+            // 随答题数加快初始速度
+            timeLimit = Math.max(1.5, 5.0 - (Math.floor(correctCount / 20) * 0.5));
+            setupOptions(ans);
+            startTimer();
+        }
+
+        function r(m){ return Math.floor(Math.random() * m) + 1; }
+
+        function setupOptions(correct) {
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            let opts = [correct];
+            while(opts.length < 3){
+                let w = Math.random() > 0.5 ? correct + (r(5)) : Math.max(0, correct - (r(5)));
+                if(!opts.includes(w)) opts.push(w);
+            }
+            opts.sort(() => Math.random() - 0.5).forEach(o => {
+                const b = document.createElement('button');
+                b.className = "w-full py-4 bg-white border-2 border-gray-100 rounded-3xl text-2xl font-bold shadow-sm active:scale-95 transition-all hover:border-rose-300";
+                b.innerText = o;
+                b.onclick = () => handleAnswer(o);
+                grid.appendChild(b);
+            });
+        }
+
+        function startTimer() {
+            timeLeft = timeLimit;
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                if (isPaused) return;
+                // Boost 开启时，消耗速度翻倍
+                timeLeft -= (30 / 1000) * (isBoostActive ? 2 : 1);
+                const perc = Math.max(0, (timeLeft / timeLimit) * 100);
+                document.getElementById('unicorn-sprite').style.left = `calc(${100 - perc}% - 40px)`;
+                document.getElementById('timer-rainbow').style.width = (100 - perc) + '%';
+                if (timeLeft <= 0) gameOver();
+            }, 30);
+        }
+
+        /**
+         * 答题与计分逻辑
+         */
+        function handleAnswer(sel) {
+            if (!gameActive || isPaused) return;
+            if (sel === currentQ.ans) {
+                // 计算当前题目得分
+                let base = (Math.floor(correctCount / 10) + 1) * 10;
+                let diff = Math.floor(base * (opData[currentQ.type].weight - 1.0));
+                let time = Math.floor(timeLeft * 5);
+                
+                // Boost 全额翻倍
+                if(isBoostActive){ base *= 2; diff *= 2; time *= 2; }
+                
+                sessionStats.base += base;
+                sessionStats.diff += diff;
+                sessionStats.time += time;
+                score = sessionStats.base + sessionStats.diff + sessionStats.time;
+                
+                correctCount++;
+                document.getElementById('display-score').innerText = score;
+                showFloatingScore(base + diff + time);
+                createFireworks(isBoostActive ? 30 : 15);
+                generateQuestion();
+            } else {
+                gameOver();
+            }
+        }
+
+        function showFloatingScore(v) {
+            const el = document.createElement('div');
+            el.className = 'score-float left-1/2';
+            el.innerText = `+${v}`;
+            document.getElementById('question-area').appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        /**
+         * 剧场级结算动画序列
+         */
+        function gameOver() {
+            gameActive = false;
+            clearInterval(timer);
+            showScreen('over');
+
+            // 初始化 UI 状态
+            const elements = ['step-base', 'step-time', 'step-diff', 'over-actions'];
+            elements.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('opacity-0');
+                el.classList.remove('animate-pop', 'animate-shake');
+            });
+            document.getElementById('final-total-score').innerText = "0";
+
+            const total = sessionStats.base + sessionStats.time + sessionStats.diff;
+
+            // 1. 基础分显示 (0.5s)
+            setTimeout(() => {
+                revealStep('step-base', 'tally-base', sessionStats.base);
+            }, 500);
+
+            // 2. 时间奖励 + 爆炸 (1.5s)
+            setTimeout(() => {
+                revealStep('step-time', 'tally-time', "+" + sessionStats.time);
+                triggerExplosion('step-time');
+            }, 1500);
+
+            // 3. 难度奖励 + 爆炸 (2.5s)
+            setTimeout(() => {
+                revealStep('step-diff', 'tally-diff', "+" + sessionStats.diff);
+                triggerExplosion('step-diff');
+            }, 2500);
+
+            // 4. 总分滚动汇总 (3.5s)
+            setTimeout(() => {
+                countTo(total);
+                document.getElementById('over-actions').classList.replace('opacity-0', 'opacity-100');
+                document.getElementById('over-actions').classList.remove('translate-y-4');
+            }, 3500);
+        }
+
+        function revealStep(id, textId, value) {
+            const el = document.getElementById(id);
+            el.classList.remove('opacity-0');
+            el.classList.add('animate-pop');
+            document.getElementById(textId).innerText = value;
+        }
+
+        function triggerExplosion(id) {
+            const el = document.getElementById(id);
+            el.classList.add('animate-shake');
+            createFireworks(40); 
+        }
+
+        function countTo(target) {
+            const el = document.getElementById('final-total-score');
+            let current = 0;
+            const duration = 1000;
+            const start = performance.now();
+
+            function update(now) {
+                const progress = Math.min(1, (now - start) / duration);
+                current = Math.floor(progress * target);
+                el.innerText = current;
+                if (progress < 1) requestAnimationFrame(update);
+                else el.innerText = target;
+            }
+            requestAnimationFrame(update);
+        }
+
+        /**
+         * 基础辅助功能
+         */
+        function pauseGame() { isPaused = true; document.getElementById('overlay-pause').classList.remove('hidden'); }
+        function resumeGame() { isPaused = false; document.getElementById('overlay-pause').classList.add('hidden'); }
+        function exitToMenu() { gameActive = false; clearInterval(timer); showScreen('home'); }
+
+        function saveAndShowLeader() {
+            const name = document.getElementById('input-name').value.trim() || 'Unicorn';
+            let board = JSON.parse(localStorage.getItem('uniboard_deluxe') || '[]');
+            board.push({ name, score, date: new Date().toLocaleDateString() });
+            board.sort((a,b) => b.score - a.score);
+            localStorage.setItem('uniboard_deluxe', JSON.stringify(board.slice(0, 10)));
+            showLeaderboard();
+        }
+
+        function showLeaderboard() {
+            const board = JSON.parse(localStorage.getItem('uniboard_deluxe') || '[]');
+            const container = document.getElementById('leaderboard-container');
+            container.innerHTML = board.length ? board.map((e,i) => `
+                <div class="flex justify-between p-3 bg-white rounded-2xl border shadow-sm ${i===0?'ring-2 ring-rose-300':''}">
+                    <span class="font-bold text-slate-700">#${i+1} ${e.name}</span>
+                    <span class="font-black text-rose-500">${e.score}</span>
+                </div>
+            `).join('') : '<p class="text-center text-gray-400">No champions yet!</p>';
+            showScreen('leaderboard');
+        }
+
+        /**
+         * 粒子烟花引擎
+         */
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.onresize = resize; resize();
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.s = Math.random() * 3 + 2;
+                this.vx = (Math.random() - 0.5) * 15;
+                this.vy = (Math.random() - 0.5) * 15;
+                this.o = 1;
+            }
+            update() { this.x+=this.vx; this.y+=this.vy; this.vy+=0.2; this.o-=0.02; }
+            draw() { ctx.globalAlpha = this.o; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, 7); ctx.fill(); }
+        }
+        function createFireworks(n) {
+            const colors = ['#f472b6', '#60a5fa', '#fbbf24', '#34d399', '#a78bfa'];
+            for(let i=0; i<n; i++) particles.push(new Particle(canvas.width/2, canvas.height/2, colors[Math.floor(Math.random()*colors.length)]));
+        }
+        function anim() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles = particles.filter(p => p.o > 0);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(anim);
+        }
+        anim();
+    </script>
+</body>
+</html>
