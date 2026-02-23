@@ -1,16 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="apple-touch-icon" href="ChatGPT Image 2026年2月21日 22_01_02.png">
-<link rel="icon" href="ChatGPT Image 2026年2月21日 22_01_02.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Unicorn Challenge - Deluxe Edition</title>
-    <!-- 使用 Tailwind CSS 构建现代化 UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入圆润可爱的字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -29,7 +23,6 @@
             backdrop-filter: blur(10px);
         }
 
-        /* 运算符按钮样式 */
         .op-btn {
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 3px solid transparent;
@@ -41,7 +34,6 @@
             border-color: #fce7f3;
         }
 
-        /* 独角兽跑道样式 */
         .track {
             position: relative;
             height: 60px;
@@ -70,7 +62,6 @@
             transition: width 0.1s linear;
         }
 
-        /* Boost 模式激活样式 */
         .track.boost-active {
             border-color: #fbbf24;
             box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
@@ -79,7 +70,6 @@
             background: linear-gradient(90deg, #fbbf24, #f59e0b);
         }
 
-        /* 结算动画 */
         @keyframes pop-in {
             0% { transform: scale(0.5); opacity: 0; }
             70% { transform: scale(1.2); }
@@ -128,16 +118,33 @@
             70% { box-shadow: 0 0 0 15px rgba(251, 191, 36, 0); }
             100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
         }
+
+        /* --- NEW STYLES FOR MILESTONE --- */
+        @keyframes coin-drop {
+            0% { transform: translateY(-100vh) rotateY(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(100vh) rotateY(1080deg); opacity: 0; }
+        }
+        .milestone-coin {
+            animation: coin-drop 3s ease-in-out forwards;
+        }
+        .coin-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center overflow-hidden">
 
-    <!-- 粒子烟花画布 -->
     <canvas id="fireworks-canvas"></canvas>
 
     <div id="app-container" class="main-card p-8 w-full max-w-md mx-4 relative border border-white">
         
-        <!-- 首页 -->
+        <!-- Home Screen -->
         <div id="screen-home" class="text-center">
             <div class="mb-4 text-6xl bouncing">🦄</div>
             <h1 class="text-3xl font-bold text-gray-800 mb-1">Math Unicorn</h1>
@@ -145,7 +152,6 @@
                 Multiplier: x1.00
             </div>
             
-            <!-- 运算符选择 -->
             <div class="grid grid-cols-2 gap-4 mb-8">
                 <button onclick="toggleOp('add')" id="btn-add" class="op-btn py-4 bg-white rounded-3xl text-3xl shadow-sm hover:shadow-md font-bold text-rose-500 flex flex-col items-center">
                     <span>+</span><span class="text-[10px] uppercase font-bold text-rose-300">Base</span>
@@ -167,7 +173,7 @@
             <button onclick="showLeaderboard()" class="mt-4 text-gray-400 font-bold text-sm hover:text-rose-500 transition">LEADERBOARD</button>
         </div>
 
-        <!-- 游戏界面 -->
+        <!-- Play Screen -->
         <div id="screen-play" class="hidden relative">
             <div class="flex justify-between items-center mb-6">
                 <div class="flex gap-2">
@@ -185,13 +191,13 @@
                 <div id="unicorn-sprite">🦄</div>
             </div>
 
-            <div id="question-area" class="text-center mb-8 relative">
-                <div id="display-question" class="text-6xl font-black text-slate-800 transition-all duration-300">0 + 0</div>
+            <div id="game-content-area">
+                <div id="question-area" class="text-center mb-8 relative">
+                    <div id="display-question" class="text-6xl font-black text-slate-800 transition-all duration-300">0 + 0</div>
+                </div>
+                <div id="options-grid" class="grid grid-cols-1 gap-3 mb-8"></div>
             </div>
 
-            <div id="options-grid" class="grid grid-cols-1 gap-3 mb-8"></div>
-
-            <!-- Boost 按钮 -->
             <div class="flex flex-col items-center">
                 <button id="btn-boost" onclick="toggleBoost()" class="w-20 h-20 rounded-full bg-slate-100 border-4 border-white shadow-xl flex items-center justify-center text-3xl transition-all duration-300 hover:scale-110 active:scale-90">⚡</button>
                 <div class="mt-2 text-center">
@@ -200,70 +206,78 @@
             </div>
         </div>
 
-        <!-- 暂停遮罩 -->
-        <div id="overlay-pause" class="hidden absolute inset-0 bg-white/90 z-20 flex flex-col items-center justify-center rounded-[40px]">
-            <h2 class="text-4xl font-bold mb-8">PAUSED</h2>
+        <!-- Milestone Overlay -->
+        <div id="milestone-overlay" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center pointer-events-none">
+            <div class="text-center">
+                <h3 class="text-4xl font-black text-amber-500 mb-2 drop-shadow-lg">Congratulations!</h3>
+                <p class="text-xl font-bold text-amber-600 bg-white/80 px-4 py-1 rounded-full inline-block">Milestone Bonus $5</p>
+            </div>
+            <!-- Rotating Coin Container -->
+            <div id="coin-container" class="mt-8">
+                <svg width="80" height="80" viewBox="0 0 100 100" class="coin-spin">
+                    <circle cx="50" cy="50" r="45" fill="#fbbf24" stroke="#f59e0b" stroke-width="4" />
+                    <circle cx="50" cy="50" r="35" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
+                    <text x="50" y="65" font-size="30" font-weight="bold" fill="#f59e0b" text-anchor="middle">$5</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="overlay-pause" class="hidden absolute inset-0 bg-white/95 z-20 flex flex-col items-center justify-center rounded-[40px]">
+            <h2 class="text-4xl font-bold mb-4">PAUSED</h2>
+            <p class="text-gray-400 mb-8 font-medium">Resuming will reset the current question!</p>
             <button onclick="resumeGame()" class="bg-rose-500 text-white px-12 py-4 rounded-full font-bold text-xl shadow-lg active:scale-95 mb-4">RESUME</button>
             <button onclick="exitToMenu()" class="text-gray-400 font-bold">QUIT</button>
         </div>
 
-        <!-- 结算中心 -->
+        <!-- Result Screen -->
         <div id="screen-over" class="hidden text-center">
             <h2 class="text-3xl font-bold text-red-500 mb-6">TIME'S UP!</h2>
             
             <div class="bg-slate-50 rounded-[30px] p-6 mb-6 space-y-4 relative overflow-hidden">
-                <!-- 基础分结算 -->
                 <div id="step-base" class="opacity-0 flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm">
                     <span class="text-xs font-bold text-gray-400 uppercase">Base Score</span>
                     <span id="tally-base" class="font-black text-slate-700">0</span>
                 </div>
-                
-                <!-- 时间奖金结算 -->
                 <div id="step-time" class="opacity-0 flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm">
                     <span class="text-xs font-bold text-sky-400 uppercase">Time Bonus 🎆</span>
                     <span id="tally-time" class="font-black text-sky-500">+0</span>
                 </div>
-                
-                <!-- 难度奖金结算 -->
                 <div id="step-diff" class="opacity-0 flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm">
                     <span class="text-xs font-bold text-amber-400 uppercase">Difficulty Bonus 💥</span>
                     <span id="tally-diff" class="font-black text-amber-500">+0</span>
                 </div>
-
-                <!-- 汇总 -->
                 <div class="border-t border-dashed border-gray-200 pt-4">
                     <p class="text-xs text-gray-400 font-bold uppercase mb-1">Grand Total</p>
                     <div id="final-total-score" class="text-5xl font-black text-rose-500">0</div>
                 </div>
             </div>
 
-            <!-- 操作区（动画完成后显示） -->
             <div id="over-actions" class="opacity-0 translate-y-4 transition-all duration-500">
                 <input type="text" id="input-name" placeholder="Enter Your Name" class="w-full p-4 bg-gray-100 rounded-2xl mb-4 text-center text-lg outline-none focus:ring-2 ring-rose-300">
                 <button onclick="saveAndShowLeader()" class="w-full bg-rose-500 text-white font-bold py-4 rounded-full shadow-lg active:scale-95 mb-4">SAVE SCORE</button>
             </div>
         </div>
 
-        <!-- 排行榜 -->
+        <!-- Leaderboard -->
         <div id="screen-leaderboard" class="hidden">
             <h2 class="text-2xl font-bold mb-6 text-center">Top Unicorns</h2>
             <div id="leaderboard-container" class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2"></div>
-            <button onclick="showScreen('home')" class="w-full bg-slate-800 text-white font-bold py-4 rounded-full active:scale-95 transition">BACK HOME</button>
+            <div class="flex flex-col gap-3">
+                <button onclick="showScreen('home')" class="w-full bg-slate-800 text-white font-bold py-4 rounded-full active:scale-95 transition">BACK HOME</button>
+                <button onclick="clearLeaderboard()" class="text-gray-400 text-xs font-bold hover:text-red-500 transition">CLEAR ALL RECORDS</button>
+            </div>
         </div>
 
     </div>
 
     <script>
-        /**
-         * 游戏配置与状态管理
-         */
         let selectedOps = [];
         let score = 0;
         let correctCount = 0;
-        let gameActive = false, isPaused = false, isBoostActive = false;
+        let lastMilestone = 0;
+        let gameActive = false, isPaused = false, isBoostActive = false, isCelebrating = false;
         let timer = null, timeLeft = 0, timeLimit = 5.0, currentQ = {};
-        
-        // 存储本局详细数据用于结算
         let sessionStats = { base: 0, time: 0, diff: 0 };
 
         const opData = {
@@ -273,17 +287,11 @@
             div: { symbol: '÷', weight: 1.3, btnId: 'btn-div' }
         };
 
-        /**
-         * 界面导航
-         */
         function showScreen(name) {
             ['home', 'play', 'over', 'leaderboard'].forEach(s => document.getElementById('screen-' + s).classList.add('hidden'));
             document.getElementById('screen-' + name).classList.remove('hidden');
         }
 
-        /**
-         * 首页逻辑
-         */
         function toggleOp(op) {
             const btn = document.getElementById(opData[op].btnId);
             if (selectedOps.includes(op)) {
@@ -303,19 +311,18 @@
             startGame();
         }
 
-        /**
-         * 核心游戏逻辑
-         */
         function startGame() {
-            score = 0; correctCount = 0; gameActive = true;
+            score = 0; correctCount = 0; lastMilestone = 0;
+            gameActive = true; isPaused = false; isCelebrating = false;
             sessionStats = { base: 0, time: 0, diff: 0 };
             document.getElementById('display-score').innerText = "0";
+            document.getElementById('game-content-area').style.visibility = 'visible';
             showScreen('play');
             generateQuestion();
         }
 
         function toggleBoost() {
-            if (!gameActive || isPaused) return;
+            if (!gameActive || isPaused || isCelebrating) return;
             isBoostActive = !isBoostActive;
             const btn = document.getElementById('btn-boost');
             btn.className = isBoostActive ? 
@@ -327,7 +334,6 @@
 
         function generateQuestion() {
             if (!gameActive) return;
-            // 随答题数增加数字范围
             let range = [3, 5, 8, 10][Math.min(3, Math.floor(correctCount / 10))];
             const type = selectedOps[Math.floor(Math.random() * selectedOps.length)];
             let n1, n2, ans, symbol;
@@ -339,7 +345,6 @@
 
             currentQ = { n1, n2, ans, symbol, type };
             document.getElementById('display-question').innerText = `${n1} ${symbol} ${n2}`;
-            // 随答题数加快初始速度
             timeLimit = Math.max(1.5, 5.0 - (Math.floor(correctCount / 20) * 0.5));
             setupOptions(ans);
             startTimer();
@@ -368,8 +373,7 @@
             timeLeft = timeLimit;
             if (timer) clearInterval(timer);
             timer = setInterval(() => {
-                if (isPaused) return;
-                // Boost 开启时，消耗速度翻倍
+                if (isPaused || isCelebrating) return;
                 timeLeft -= (30 / 1000) * (isBoostActive ? 2 : 1);
                 const perc = Math.max(0, (timeLeft / timeLimit) * 100);
                 document.getElementById('unicorn-sprite').style.left = `calc(${100 - perc}% - 40px)`;
@@ -378,18 +382,13 @@
             }, 30);
         }
 
-        /**
-         * 答题与计分逻辑
-         */
         function handleAnswer(sel) {
-            if (!gameActive || isPaused) return;
+            if (!gameActive || isPaused || isCelebrating) return;
             if (sel === currentQ.ans) {
-                // 计算当前题目得分
                 let base = (Math.floor(correctCount / 10) + 1) * 10;
                 let diff = Math.floor(base * (opData[currentQ.type].weight - 1.0));
                 let time = Math.floor(timeLeft * 5);
                 
-                // Boost 全额翻倍
                 if(isBoostActive){ base *= 2; diff *= 2; time *= 2; }
                 
                 sessionStats.base += base;
@@ -401,10 +400,33 @@
                 document.getElementById('display-score').innerText = score;
                 showFloatingScore(base + diff + time);
                 createFireworks(isBoostActive ? 30 : 15);
-                generateQuestion();
+
+                // Milestone Logic: Every 2000 points
+                if (score >= lastMilestone + 2000) {
+                    lastMilestone = Math.floor(score / 2000) * 2000;
+                    triggerMilestone();
+                } else {
+                    generateQuestion();
+                }
             } else {
                 gameOver();
             }
+        }
+
+        function triggerMilestone() {
+            isCelebrating = true;
+            const overlay = document.getElementById('milestone-overlay');
+            const coin = document.getElementById('coin-container');
+            
+            overlay.classList.remove('hidden');
+            coin.classList.add('milestone-coin');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                coin.classList.remove('milestone-coin');
+                isCelebrating = false;
+                generateQuestion();
+            }, 3000);
         }
 
         function showFloatingScore(v) {
@@ -415,15 +437,11 @@
             setTimeout(() => el.remove(), 1000);
         }
 
-        /**
-         * 剧场级结算动画序列
-         */
         function gameOver() {
             gameActive = false;
             clearInterval(timer);
             showScreen('over');
 
-            // 初始化 UI 状态
             const elements = ['step-base', 'step-time', 'step-diff', 'over-actions'];
             elements.forEach(id => {
                 const el = document.getElementById(id);
@@ -434,24 +452,15 @@
 
             const total = sessionStats.base + sessionStats.time + sessionStats.diff;
 
-            // 1. 基础分显示 (0.5s)
-            setTimeout(() => {
-                revealStep('step-base', 'tally-base', sessionStats.base);
-            }, 500);
-
-            // 2. 时间奖励 + 爆炸 (1.5s)
+            setTimeout(() => revealStep('step-base', 'tally-base', sessionStats.base), 500);
             setTimeout(() => {
                 revealStep('step-time', 'tally-time', "+" + sessionStats.time);
                 triggerExplosion('step-time');
             }, 1500);
-
-            // 3. 难度奖励 + 爆炸 (2.5s)
             setTimeout(() => {
                 revealStep('step-diff', 'tally-diff', "+" + sessionStats.diff);
                 triggerExplosion('step-diff');
             }, 2500);
-
-            // 4. 总分滚动汇总 (3.5s)
             setTimeout(() => {
                 countTo(total);
                 document.getElementById('over-actions').classList.replace('opacity-0', 'opacity-100');
@@ -488,11 +497,20 @@
             requestAnimationFrame(update);
         }
 
-        /**
-         * 基础辅助功能
-         */
-        function pauseGame() { isPaused = true; document.getElementById('overlay-pause').classList.remove('hidden'); }
-        function resumeGame() { isPaused = false; document.getElementById('overlay-pause').classList.add('hidden'); }
+        function pauseGame() { 
+            if (isCelebrating) return;
+            isPaused = true; 
+            document.getElementById('overlay-pause').classList.remove('hidden');
+            document.getElementById('game-content-area').style.visibility = 'hidden'; 
+        }
+
+        function resumeGame() { 
+            isPaused = false; 
+            document.getElementById('overlay-pause').classList.add('hidden');
+            document.getElementById('game-content-area').style.visibility = 'visible';
+            generateQuestion(); // Generate a new question on resume
+        }
+
         function exitToMenu() { gameActive = false; clearInterval(timer); showScreen('home'); }
 
         function saveAndShowLeader() {
@@ -516,9 +534,11 @@
             showScreen('leaderboard');
         }
 
-        /**
-         * 粒子烟花引擎
-         */
+        function clearLeaderboard() {
+            localStorage.removeItem('uniboard_deluxe');
+            showLeaderboard();
+        }
+
         const canvas = document.getElementById('fireworks-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
